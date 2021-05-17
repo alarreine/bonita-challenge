@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bonita-challenge
+  labels:
+    app: bonita
+    env: dev
+spec:
+  selector:
+    matchLabels:
+      client: mysuperclient
+  revisionHistoryLimit: 3
+  replicas: 1
+  progressDeadlineSeconds: 300
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: bonita
+        env: dev
+        client: mysuperclient
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: web
+          image: bonita:7.12.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+          - name: TENANT_LOGIN
+            valueFrom:
+              secretKeyRef:
+                name: bonita-secret-config
+                key: teuser
+          - name: TENANT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: bonita-secret-config
+                key: tepassword
+          - name: PLATFORM_LOGIN
+            valueFrom:
+              secretKeyRef:
+                name: bonita-secret-config
+                key: pfuser
+          - name: PLATFORM_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: bonita-secret-config
+                key: pfpassword
+          - name: DB_VENDOR
+            value: postgres
+          - name: DB_PORT
+            value: 5432
+          - name: DB_HOST
+            value: bonita-db
+          - name: DB_ADMIN_USER
+            valueFrom:
+              secretKeyRef:
+                name: database-secret-config
+                key: username
+          - name: DB_ADMIN_PASS
+            valueFrom:
+              secretKeyRef:
+                name: database-secret-config
+                key: password
+          volumeMounts:
+            - mountPath: /opt/bonita
+              name: bonitadata
+            - name: bonita-config
+              mountPath: /opt/custom-init.d
+              subPath: bonita-custom.sh
+        - name: db
+          image: postgres:10.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          env:
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: database-secret-config
+                key: dbname
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: database-secret-config
+                key: username
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: database-secret-config
+                key: password
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: dbdata
+            - name: pg-config
+              mountPath: /var/lib/postgresql/postgresql.conf
+              subPath: postgresql.conf
+            - name: pg-config
+              mountPath: /var/lib/postgresql/pg_hba.conf
+              subPath: pg_hba.conf
+            - name: pg-config
+              mountPath: /docker-entrypoint-initdb.d/pg-config.sh
+              subPath: pg-config.sh
+          args:
+              - "-c"
+              - "config_file=/var/lib/postgresql/postgresql.conf"
+              - "-c"
+              - "hba_file=/var/lib/postgresql/pg_hba.conf"
+      volumes:
+        - name: dbdata
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+        - name: bonitadata
+          persistentVolumeClaim:
+            claimName: bonita-pv-claim
+        - name: pg-config
+          configMap:
+            name: pg-config

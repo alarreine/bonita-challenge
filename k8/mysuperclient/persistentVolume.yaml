@@ -1,0 +1,71 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: bonita-pv-volume
+  labels:
+    type: local
+    app: bonita
+    env: dev
+    stack: web
+    client: mysuperclient
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/bonita-db"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: bonita-pv-claim
+  labels:
+    app: bonita
+    env: dev
+    stack: web
+    client: mysuperclient
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: postgres-pv-volume
+  labels:
+    type: local
+    env: dev
+    app: bonita
+    stack: db
+    client: mysuperclient
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/bonita-app"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-pv-claim
+  labels:
+    env: dev
+    app: bonita
+    stack: db
+    client: mysuperclient
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

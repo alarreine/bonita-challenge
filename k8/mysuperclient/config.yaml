@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bonita-config
+  labels:
+    app: bonita
+    env: dev
+    client: mysuperclient
+    stack: web
+data:
+  bonita-custom.sh: |
+    #!/bin/sh
+    sed -i "s/^org.bonitasoft.level = WARNING$/org.bonitasoft.level = INFO/" /opt/bonita/BonitaCommunity-2021.1/server/conf/logging.properties
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pg-config
+  labels:
+    app: bonita
+    env: dev
+    client: mysuperclient
+    stack: db
+data:
+  pg_hba.conf: |
+    host all all 0.0.0.0/0 md5
+  postgresql.conf: |
+    listen_addresses = '*'
+    max_connections = 100
+    max_prepared_transactions = 100
+  extra.sh: |
+    #!/bin/sh
+    postgres -D /var/lib/postgresql
