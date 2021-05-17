@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+    stages {
+        stage('Clone') {
+            steps {
+                git 'https://myrepo.github.com'
+            }
+        }
+        stage('Check') {
+          steps {
+            fileExists 'pom.xml'
+          }
+        }
+        stage('Build MVN') {
+            agent {
+                docker {
+                    image 'maven:3-alpine'
+                    args '-v $HOME/.m2:/root/.m2'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'mvn -B -DskipTests clean package'
+            }
+    }
+    post {
+        success {
+            mail to: 'devopsteam@bonitasoft.com',
+                subject: "Great Pipeline: ${currentBuild.fullDisplayName}",
+                body: "The pipeline ${currentBuild.fullDisplayName} completed successfully."
+            
+        }
+        failure {
+            slackSend channel: '#ops-room',
+                    color: 'good',
+                    message: "The build ${currentBuild.fullDisplayName} has errors. Please check ${env.BUILD_URL}"
+            
+        }
+    }
+}
